@@ -1,44 +1,36 @@
-import { NextLogo } from "./next-logo";
-import { SupabaseLogo } from "./supabase-logo";
+import Image from "next/image";
+import UstpLogo from "@/assets/ustp.png";
 
 export function Hero() {
   return (
-    <div className="flex flex-col gap-16 items-center">
-      <div className="flex gap-8 justify-center items-center">
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <SupabaseLogo />
-        </a>
-        <span className="border-l rotate-45 h-6" />
-        <a href="https://nextjs.org/" target="_blank" rel="noreferrer">
-          <NextLogo />
-        </a>
+    <section className="flex flex-col items-center text-center gap-8 py-12">
+      {/* Logo */}
+      <a
+        href="https://www.ustp.edu.ph/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <Image
+          src={UstpLogo}
+          alt="USTP Logo"
+          width={140}
+          height={140}
+          className="rounded-xl shadow-md"
+        />
+      </a>
+
+      {/* Title */}
+      <div>
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          NE-Attend
+        </h1>
+        <p className="mt-4 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+          Automating Attendance Monitoring for Online Learning and Conferences
+        </p>
       </div>
-      <h1 className="sr-only">Supabase and Next.js Starter Template</h1>
-      <p className="text-3xl lg:text-4xl !leading-tight mx-auto max-w-xl text-center">
-        The fastest way to build apps with{" "}
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Supabase
-        </a>{" "}
-        and{" "}
-        <a
-          href="https://nextjs.org/"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Next.js
-        </a>
-      </p>
-      <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent my-8" />
-    </div>
+
+      {/* Divider */}
+      <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent my-6" />
+    </section>
   );
 }

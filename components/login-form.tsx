@@ -123,7 +123,7 @@ export function LoginForm({
 
         <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
         <CardDescription>
-          Enter your credentials to sign in to your account
+          Enter your credentials to sign in to your accounts
         </CardDescription>
       </CardHeader>
 

@@ -8,10 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { DataTable } from "@/components/data-table"
+import { Database, Tables } from "@/database.types"
+
+
+type User = Database["public"]["Tables"]["users"]["Row"]
+
 
 export default async function ProtectedPage() {
   const supabase = await createClient()
 
+  // Get authenticated user claims
   const { data, error } = await supabase.auth.getClaims()
   if (error || !data?.claims) {
     redirect("/auth/login")
@@ -19,14 +26,29 @@ export default async function ProtectedPage() {
 
   const claims = data.claims
 
+  // Fetch users from the database
+  const { data: usersData, error: usersError } = await supabase
+    .from<"users", User>("users")
+    .select("*")
+
+  if (usersError) {
+    console.error(usersError)
+  }
+
+  // Ensure users is always an array
+  const users: User[] = usersData ?? []
+
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
+      <DataTable data={users} />
+
       {/* Info Banner */}
       <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
         <InfoIcon size="16" strokeWidth={2} />
         This is a protected page that you can only see as an authenticated user
       </div>
 
+      {/* User Details Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

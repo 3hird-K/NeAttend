@@ -13,7 +13,7 @@ import {
 
 export function NavSecondary({
   items,
-  showText = true, // new prop to control label visibility
+  showText = true, 
   ...props
 }: {
   items: {

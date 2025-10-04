@@ -11,7 +11,7 @@ export default async function ProtectedServerLayout({ children }: { children: Re
   const claims = claimsData.claims
   const authUserId = claims.sub 
 
-  console.log("UserId", authUserId)
+  // console.log("UserId", authUserId)
 
   const { data: userFromDB, error: userError } = await supabase
     .from("users")
@@ -19,10 +19,10 @@ export default async function ProtectedServerLayout({ children }: { children: Re
     .eq("id", authUserId)
     .single() 
   
-  console.log(userFromDB?.id)
+  // console.log(userFromDB?.id)
 
-  console.log("Data:", JSON.stringify(userFromDB, null, 2))
-  console.log("Error:", userError)
+  // console.log("Data:", JSON.stringify(userFromDB, null, 2))
+  // console.log("Error:", userError)
   if (userError || !userFromDB) redirect("/auth/login") 
 
 

@@ -51,13 +51,13 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 const navData = {
   navMain: [
     { title: "Dashboard", url: "#", icon: IconDashboard },
-    { title: "Lifecycle", url: "#", icon: IconListDetails },
+    // { title: "Lifecycle", url: "#", icon: IconListDetails },
     { title: "Analytics", url: "#", icon: IconChartBar },
     { title: "Projects", url: "#", icon: IconFolder },
     { title: "Team", url: "#", icon: IconUsers },
   ],
   navSecondary: [
-    { title: "Settings", url: "#", icon: IconSettings },
+    { title: "Theme", url: "#", icon: IconSettings },
     { title: "Get Help", url: "#", icon: IconHelp },
     { title: "Search", url: "#", icon: IconSearch },
   ],

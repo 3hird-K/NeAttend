@@ -12,8 +12,7 @@ export const metadata: Metadata = {
   title: "NeAttend",
   description: "The fastest way to build apps with Next.js and Supabase",
   icons: {
-    icon: "@/assets/favicon.ico",                // default favicon
-    shortcut: "/favicon-16x16.png",      // optional shortcut icon
+    icon: "@/assets/favicon.ico",       
   },
 
 };

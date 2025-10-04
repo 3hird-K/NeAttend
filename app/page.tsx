@@ -14,6 +14,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { supabase } from "@/lib/supabase/sup";
+import { Button } from "@/components/ui/button";
 
 // import { ThemeSwitcher } from "@/components/theme-switcher";
 
@@ -117,6 +118,7 @@ export default function Home() {
               </AccordionItem>
             </Accordion>
           </section>
+
         </div>
 
         {/* Footer */}

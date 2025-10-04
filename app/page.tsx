@@ -7,17 +7,51 @@ import Link from "next/link";
 import Image from "next/image";
 import Logo from "@/assets/Logologin.png";
 import LogoLight from "@/assets/loginlogolight.png";
-
-// import shadcn accordion
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from "@/components/ui/accordion"; // <- adjust path if needed
-import { ThemeSwitcher } from "@/components/theme-switcher";
+} from "@/components/ui/accordion";
+import { supabase } from "@/lib/supabase/sup";
+
+// import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export default function Home() {
+
+ 
+    const setNewView = async () => {
+      // Insert
+      const { data, error } = await supabase.from("views").insert({
+        name: "random namessss",
+      });
+
+      if (data) {
+        console.log("Inserted:", JSON.stringify(data, null, 2));
+      }
+      if (error) {
+        console.error("Insert error:", JSON.stringify(error, null, 2));
+      }
+
+      // Select latest row
+      const { data: d2, error: e2 } = await supabase
+        .from("views")
+        .select("*")
+        .order("created_at", { ascending: false })
+        ;
+
+      if (d2) {
+        console.log("Latest row:", JSON.stringify(d2, null, 2));
+      }
+      if (e2) {
+        console.error("Select error:", JSON.stringify(e2, null, 2));
+      }
+    };
+
+    setNewView();
+
+
+
   return (
     <main className="min-h-screen flex flex-col items-center">
       <div className="flex-1 w-full flex flex-col gap-20 items-center">

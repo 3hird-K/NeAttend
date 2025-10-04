@@ -20,6 +20,7 @@ import Image from "next/image";
 import Logo from "@/assets/Logologin.png";
 import LogoLight from "@/assets/loginlogolight.png";
 import GoogleLogo from "@/assets/googlelogo.png"; 
+import { Eye, EyeOff } from "lucide-react"; // 👀 import icons
 
 export function LoginForm({
   className,
@@ -29,6 +30,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👀 new state
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -38,11 +40,42 @@ export function LoginForm({
     setError(null);
 
     try {
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (userCheckError) {
+        console.error("Error checking user:", userCheckError);
+        setError("Something went wrong. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!existingUser) {
+        setError("Account doesn't exist.");
+        setIsLoading(false);
+        setPassword("");
+        setEmail("");
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
+
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          setError("Invalid credentials. Please try again.");
+        } else {
+          setError(error.message);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       router.push("/protected");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -57,7 +90,7 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/protected`,
+          redirectTo: `${window.location.origin}/protected`
         },
       });
       if (error) throw error;
@@ -69,7 +102,6 @@ export function LoginForm({
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader className="flex flex-col items-center space-y-2 text-center">
-        {/* Logo (switches with dark mode) */}
         <Link href={"/"}>
           <div className="flex justify-center">
             <Image
@@ -109,24 +141,32 @@ export function LoginForm({
             />
           </div>
 
-          <div className="grid gap-2">
-            <div className="flex items-center">
+          {/* 👀 Password with toggle */}
+          <div className="grid gap-2 relative">
+            <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter a password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
               <Link
                 href="/auth/forgot-password"
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 Forgot your password?
               </Link>
+            </div>
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
           {error && (
@@ -135,7 +175,7 @@ export function LoginForm({
             </p>
           )}
 
-          <Button type="submit" className="w-full py-" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Logging in..." : "Login"}
           </Button>
 
@@ -150,15 +190,12 @@ export function LoginForm({
           </div>
         </form>
 
-        {/* Divider */}
         <div className="flex items-center gap-2 my-4">
           <div className="h-px flex-1 bg-muted" />
           <span className="text-sm text-muted-foreground">Or continue with</span>
           <div className="h-px flex-1 bg-muted" />
         </div>
-    
 
-        {/* Google Login Button */}
         <Button
           type="button"
           variant="outline"

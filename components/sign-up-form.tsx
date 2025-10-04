@@ -16,10 +16,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react"; // 👈 added icons
 
 import Logo from "@/assets/Logologin.png";
 import LogoLight from "@/assets/loginlogolight.png";
 import GoogleLogo from "@/assets/googlelogo.png";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { isPasswordPwned, isPasswordStrong } from "@/lib/passwordUtils";
 
 export function SignUpForm({
   className,
@@ -28,8 +39,17 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [role, setRole] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<string | null>(null);
+  const [isBreached, setIsBreached] = useState(false);
+
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -38,22 +58,84 @@ export function SignUpForm({
     setIsLoading(true);
     setError(null);
 
+    if (!role) {
+      setError("Please select a role before signing up.");
+      setIsLoading(false);
+      return;
+    }
+
     if (password !== repeatPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
       return;
     }
 
+    const strengthError = isPasswordStrong(password);
+    if (strengthError) {
+      setError(strengthError);
+      setIsLoading(false);
+      return;
+    }
+
+    const isPwned = await isPasswordPwned(password);
+    if (isPwned) {
+      setError("This password has appeared in data breaches. Please use another one.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
+          data: { firstname, lastname, role },
         },
       });
+
       if (error) throw error;
-      router.push("/auth/sign-up-success");
+
+      if (data.user) {
+        const { data: existingUser, error: selectError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("email", email)
+          .single();
+
+        if (existingUser) {
+          setError("Account already exists.");
+          setEmail("");
+          setPassword("");
+          setRepeatPassword("");
+          await supabase.auth.admin.deleteUser(data.user.id);
+          return;
+        }
+
+        if (selectError && selectError.code !== "PGRST116") {
+          console.error("Error checking user existence:", selectError);
+          setError("Something went wrong checking existing users.");
+          return;
+        }
+
+        const { error: insertError } = await supabase.from("users").insert([
+          {
+            id: data.user.id,
+            firstname,
+            lastname,
+            role,
+            email,
+          },
+        ]);
+
+        if (insertError) {
+          console.error("Insert into users table failed:", insertError);
+          setError("Account created but profile insert failed: " + insertError.message);
+          return;
+        }
+
+        router.push("/auth/sign-up-success");
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -79,7 +161,6 @@ export function SignUpForm({
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader className="flex flex-col items-center space-y-2 text-center">
-        {/* Logo (switches with dark mode) */}
         <Link href={"/"}>
           <div className="flex justify-center">
             <Image
@@ -105,6 +186,51 @@ export function SignUpForm({
 
       <CardContent>
         <form onSubmit={handleSignUp} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="firstname">First Name</Label>
+              <Input
+                id="firstname"
+                type="text"
+                placeholder="Sarah"
+                required
+                value={firstname}
+                onChange={(e) => setFirstname(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="lastname">Last Name</Label>
+              <Input
+                id="lastname"
+                type="text"
+                placeholder="Discaya"
+                required
+                value={lastname}
+                onChange={(e) => setLastname(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={(value) => setRole(value)} required>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Account type</SelectLabel>
+                  <SelectItem value="instructor">Instructor</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="admin" disabled>
+                    Admin
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -117,28 +243,88 @@ export function SignUpForm({
             />
           </div>
 
+          {/* 🔹 Password with toggle + strength meter */}
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter a password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter a password"
+                required
+                value={password}
+                onChange={async (e) => {
+                  const value = e.target.value;
+                  setPassword(value);
+
+                  const strengthError = isPasswordStrong(value);
+                  setPasswordStrength(strengthError ? strengthError : "Strong password");
+
+                  if (value.length > 6) {
+                    const pwned = await isPasswordPwned(value);
+                    setIsBreached(pwned);
+                  } else {
+                    setIsBreached(false);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            {password && (
+              <div className="mt-2 text-sm">
+                <div
+                  className={`h-2 rounded-full ${
+                    isBreached
+                      ? "bg-red-500"
+                      : passwordStrength === "Strong password"
+                      ? "bg-green-500"
+                      : "bg-yellow-500"
+                  }`}
+                />
+                <p
+                  className={`mt-1 ${
+                    isBreached
+                      ? "text-red-600"
+                      : passwordStrength === "Strong password"
+                      ? "text-green-600"
+                      : "text-yellow-600"
+                  }`}
+                >
+                  {isBreached
+                    ? "This password has appeared in data breaches."
+                    : passwordStrength}
+                </p>
+              </div>
+            )}
           </div>
 
+          {/* 🔹 Confirm Password with toggle */}
           <div className="grid gap-2">
-            <Label htmlFor="repeat-password">Repeat Password</Label>
-            <Input
-              id="repeat-password"
-              type="password"
-              placeholder="Repeat password"
-              required
-              value={repeatPassword}
-              onChange={(e) => setRepeatPassword(e.target.value)}
-            />
+            <Label htmlFor="repeat-password">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                id="repeat-password"
+                type={showRepeatPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                required
+                value={repeatPassword}
+                onChange={(e) => setRepeatPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowRepeatPassword(!showRepeatPassword)}
+                className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                {showRepeatPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -162,14 +348,12 @@ export function SignUpForm({
           </div>
         </form>
 
-        {/* Divider */}
         <div className="flex items-center gap-2 my-4">
           <div className="h-px flex-1 bg-muted" />
           <span className="text-sm text-muted-foreground">Or continue with</span>
           <div className="h-px flex-1 bg-muted" />
         </div>
 
-        {/* Google SignUp Button */}
         <Button
           type="button"
           variant="outline"

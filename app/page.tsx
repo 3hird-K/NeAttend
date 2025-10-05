@@ -1,58 +1,14 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
-import Image from "next/image";
-import Logo from "@/assets/Logologin.png";
-import LogoLight from "@/assets/loginlogolight.png";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
-import { supabase } from "@/lib/supabase/sup";
-import { Button } from "@/components/ui/button";
-
-// import { ThemeSwitcher } from "@/components/theme-switcher";
+import { EnvVarWarning } from "@/components/env-var-warning"
+import { AuthButton } from "@/components/auth-button"
+import { Hero } from "@/components/hero"
+import { hasEnvVars } from "@/lib/utils"
+import Link from "next/link"
+import Image from "next/image"
+import Logo from "@/assets/Logologin.png"
+import LogoLight from "@/assets/loginlogolight.png"
+import { ViewsList } from "@/components/views-list"
 
 export default function Home() {
-
- 
-    const setNewView = async () => {
-      // Insert
-      const { data, error } = await supabase.from("views").insert({
-        name: "random namessss",
-      });
-
-      if (data) {
-        console.log("Inserted:", JSON.stringify(data, null, 2));
-      }
-      if (error) {
-        console.error("Insert error:", JSON.stringify(error, null, 2));
-      }
-
-      // Select latest row
-      const { data: d2, error: e2 } = await supabase
-        .from("views")
-        .select("*")
-        .order("created_at", { ascending: false })
-        ;
-
-      if (d2) {
-        console.log("Latest row:", JSON.stringify(d2, null, 2));
-      }
-      if (e2) {
-        console.error("Select error:", JSON.stringify(e2, null, 2));
-      }
-    };
-
-    setNewView();
-
-
-
   return (
     <main className="min-h-screen flex flex-col items-center">
       <div className="flex-1 w-full flex flex-col gap-20 items-center">
@@ -86,39 +42,7 @@ export default function Home() {
         {/* Page Content */}
         <div className="flex-1 flex flex-col gap-10 max-w-5xl p-5">
           <Hero />
-
-          <section className="w-full max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 text-center">FAQ</h2>
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="item-1">
-                <AccordionTrigger>What is NE-Attend?</AccordionTrigger>
-                <AccordionContent>
-                  NE-Attend is an automated system for monitoring attendance in
-                  online learning sessions and conferences. It helps streamline
-                  record keeping and ensures accuracy.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-2">
-                <AccordionTrigger>How does it work?</AccordionTrigger>
-                <AccordionContent>
-                  The system integrates with your sessions to automatically
-                  track participant presence. Data is stored securely and can be
-                  exported for reporting.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-3">
-                <AccordionTrigger>Who can use this application?</AccordionTrigger>
-                <AccordionContent>
-                  This app is designed for universities, organizations, and
-                  event managers who want a reliable attendance tracking
-                  solution.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </section>
-
+          <ViewsList />
         </div>
 
         {/* Footer */}
@@ -137,5 +61,5 @@ export default function Home() {
         </footer>
       </div>
     </main>
-  );
+  )
 }

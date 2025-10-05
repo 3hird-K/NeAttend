@@ -86,7 +86,9 @@ import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -105,6 +107,21 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { createClient } from "@/lib/supabase/client"
+import { isPasswordPwned, isPasswordStrong } from "@/lib/passwordUtils"
+import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
 
 export const schema = z.object({
   id: z.string(),
@@ -112,12 +129,9 @@ export const schema = z.object({
   lastname: z.string(),
   role: z.string(),
   email: z.string(),
-  created_at: z.string(),
+  created_at: z.string().nullable(),
 })
 
-
-
-// Create a separate component for the drag handle
 function DragHandle({ id }: { id: string }) {
   const { attributes, listeners } = useSortable({
     id,
@@ -143,32 +157,6 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     header: () => null,
     cell: ({ row }) => <DragHandle id={row.original.id} />,
   },
-  // {
-  //   id: "select",
-  //   header: ({ table }) => (
-  //     <div className="flex items-start justify-start">
-  //       <Checkbox
-  //         checked={
-  //           table.getIsAllPageRowsSelected() ||
-  //           (table.getIsSomePageRowsSelected() && "indeterminate")
-  //         }
-  //         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-  //         aria-label="Select all"
-  //         />
-  //      </div>
-  //   ),
-  //   cell: ({ row }) => (
-  //     <div className="flex items-start justify-start">
-  //       <Checkbox
-  //         checked={row.getIsSelected()}
-  //         onCheckedChange={(value) => row.toggleSelected(!!value)}
-  //         aria-label="Select row"
-  //         />
-  //     </div>
-  //   ),
-  //   enableSorting: false,
-  //   enableHiding: false,
-  // },
   {
     accessorKey: "id",
     header: "Account #",
@@ -243,36 +231,161 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       year: "numeric",
       month: "short",
       day: "numeric",
-      // hour: "2-digit",
-      // minute: "2-digit",
     })
   },
 },
+{
+  id: "actions",
+  cell: ({ row }) => {
+    const [open, setOpen] = React.useState(false)
+    const [firstname, setFirstname] = React.useState(row.original.firstname || "")
+    const [lastname, setLastname] = React.useState(row.original.lastname || "")
+    const [role, setRole] = React.useState(row.original.role || "")
+    const [error, setError] = React.useState<string | null>(null)
+    const [isLoading, setIsLoading] = React.useState(false)
+    const router = useRouter() 
 
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          {/* <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem> */}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    const handleUpdate = async (e: React.FormEvent) => {
+      e.preventDefault()
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const supabase = createClient()
+
+        // ✅ Update users table directly
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({
+            firstname,
+            lastname,
+            role,
+          })
+          .eq("id", row.original.id) // filter by row ID
+
+        if (updateError) throw updateError
+
+        // Success ✅
+        router.refresh()
+        setOpen(false)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to update user")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    return (
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+            >
+              <IconDotsVertical />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault()
+                setOpen(true)
+              }}
+            >
+              <span>Edit</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              variant="destructive"
+              className="text-red-600"
+              onSelect={() => {
+                console.log("Delete row with ID:", row.original.id)
+              }}
+            >
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Edit Dialog */}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit profile</DialogTitle>
+              <DialogDescription>
+                Update the account details below.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleUpdate} className="grid gap-4">
+              <div className="grid gap-3">
+                <Label htmlFor="firstname">Firstname</Label>
+                <Input
+                  id="firstname"
+                  value={firstname}
+                  onChange={(e) => setFirstname(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grid gap-3">
+                <Label htmlFor="lastname">Lastname</Label>
+                <Input
+                  id="lastname"
+                  value={lastname}
+                  onChange={(e) => setLastname(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={setRole} required>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Account type</SelectLabel>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="instructor">Instructor</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                      <SelectItem value="adins">Administrator/Instructor</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg p-2">
+                  {error}
+                </p>
+              )}
+
+              <DialogFooter className="flex justify-between">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Updating..." : "Save changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </>
+    )
   },
+}
+
+
+
 ]
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
@@ -338,31 +451,6 @@ export function DataTable({
     [data]
   )
 
-  // const table = useReactTable({
-  //   data,
-  //   columns,
-  //   state: {
-  //     sorting,
-  //     columnVisibility,
-  //     rowSelection,
-  //     columnFilters,
-  //     pagination,
-  //   },
-  //   getRowId: (row) => row.id.toString(),
-  //   enableRowSelection: true,
-  //   onRowSelectionChange: setRowSelection,
-  //   onSortingChange: setSorting,
-  //   onColumnFiltersChange: setColumnFilters,
-  //   onColumnVisibilityChange: setColumnVisibility,
-  //   onPaginationChange: setPagination,
-  //   getCoreRowModel: getCoreRowModel(),
-  //   getFilteredRowModel: getFilteredRowModel(),
-  //   getPaginationRowModel: getPaginationRowModel(),
-  //   getSortedRowModel: getSortedRowModel(),
-  //   getFacetedRowModel: getFacetedRowModel(),
-  //   getFacetedUniqueValues: getFacetedUniqueValues(),
-  // })
-
   const [roleFilter, setRoleFilter] = React.useState<string>("all")
 
   const table = useReactTable({
@@ -415,7 +503,124 @@ export function DataTable({
     }
   }
 
+  const [email, setEmail] = React.useState("");
+    const [password, setPassword] = React.useState("");
+    const [repeatPassword, setRepeatPassword] = React.useState("");
+  
+    const [firstname, setFirstname] = React.useState("");
+    const [lastname, setLastname] = React.useState("");
+    const [role, setRole] = React.useState("");
+    const [error, setError] = React.useState<string | null>(null);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showPassword, setShowPassword] = React.useState(false);
+    const [showRepeatPassword, setShowRepeatPassword] = React.useState(false);
+    const [passwordStrength, setPasswordStrength] = React.useState<string | null>(null);
+    const [isBreached, setIsBreached] = React.useState(false);
+    const router = useRouter();
+
+    const handleClose = () => {
+      setFirstname("")
+      setLastname("")
+      setPassword("")
+      setRepeatPassword("")
+      setRole("")
+      setError(null)
+    }
+  
+    const handleSignUp = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const supabase = createClient();
+      setIsLoading(true);
+      setError(null);
+  
+      if (!role) {
+        setError("Please select a role before signing up.");
+        setIsLoading(false);
+        return;
+      }
+  
+      if (password !== repeatPassword) {
+        setError("Passwords do not match");
+        setIsLoading(false);
+        return;
+      }
+  
+      const strengthError = isPasswordStrong(password);
+      if (strengthError) {
+        setError(strengthError);
+        setIsLoading(false);
+        return;
+      }
+  
+      const isPwned = await isPasswordPwned(password);
+      if (isPwned) {
+        setError("This password has appeared in data breaches. Please use another one.");
+        setIsLoading(false);
+        return;
+      }
+  
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/protected`,
+            data: { firstname, lastname, role },
+          },
+        });
+  
+        if (error) throw error;
+  
+        if (data.user) {
+          const { data: existingUser, error: selectError } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", email)
+            .single();
+  
+          if (existingUser) {
+            setError("Account already exists.");
+            setEmail("");
+            setPassword("");
+            setRepeatPassword("");
+            await supabase.auth.admin.deleteUser(data.user.id);
+            return;
+          }
+  
+          if (selectError && selectError.code !== "PGRST116") {
+            console.error("Error checking user existence:", selectError);
+            setError("Something went wrong checking existing users.");
+            return;
+          }
+  
+          const { error: insertError } = await supabase.from("users").insert([
+            {
+              id: data.user.id,
+              firstname,
+              lastname,
+              role,
+              email,
+            },
+          ]);
+  
+          if (insertError) {
+            console.error("Insert into users table failed:", insertError);
+            setError("Account created but profile insert failed: " + insertError.message);
+            return;
+          }
+  
+          router.push("/auth/sign-up-success");
+        }
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+
   return (
+
     <Tabs
       defaultValue="instructor"
       className="w-full flex-col justify-start gap-6"
@@ -433,24 +638,9 @@ export function DataTable({
             <SelectItem value="instructor">Instructor</SelectItem>
             <SelectItem value="student">Student</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="adins">Admin/Instructor</SelectItem>
           </SelectContent>
         </Select>
-
-
-        {/* <Select defaultValue="instructor">
-          <SelectTrigger
-            className="flex w-fit @4xl/main:hidden"
-            size="sm"
-            id="view-selector"
-          >
-            <SelectValue placeholder="Select a view" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="instructor">Instructor</SelectItem>
-            <SelectItem value="student">Student</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select> */}
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
           <TabsTrigger value="instructor">Instructor</TabsTrigger>
           <TabsTrigger value="student">
@@ -494,10 +684,176 @@ export function DataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
-            <IconPlus />
-            <span className="hidden lg:inline">Add Section</span>
-          </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size={"sm"}>
+                    <IconPlus />
+                    Administrator
+                  </Button>
+                </DialogTrigger>
+
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Administrator Account</DialogTitle>
+                    <DialogDescription>Create and Register</DialogDescription>
+                  </DialogHeader>
+
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="firstname">First Name</Label>
+                        <Input
+                          id="firstname"
+                          type="text"
+                          placeholder="Sarah"
+                          required
+                          value={firstname}
+                          onChange={(e) => setFirstname(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="lastname">Last Name</Label>
+                        <Input
+                          id="lastname"
+                          type="text"
+                          placeholder="Discaya"
+                          required
+                          value={lastname}
+                          onChange={(e) => setLastname(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Select value={role} onValueChange={(value) => setRole(value)} required>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Account type</SelectLabel>
+                            <SelectItem value="admin">Administrator</SelectItem>
+                            <SelectItem value="adins">Administrator/Instructor</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="m@example.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Password */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter a password"
+                          required
+                          value={password}
+                          onChange={async (e) => {
+                            const value = e.target.value;
+                            setPassword(value);
+
+                            const strengthError = isPasswordStrong(value);
+                            setPasswordStrength(strengthError ? strengthError : "Strong password");
+
+                            if (value.length > 6) {
+                              const pwned = await isPasswordPwned(value);
+                              setIsBreached(pwned);
+                            } else {
+                              setIsBreached(false);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+
+                      {password && (
+                        <div className="mt-2 text-sm">
+                          <div
+                            className={`h-2 rounded-full ${
+                              isBreached
+                                ? "bg-red-500"
+                                : passwordStrength === "Strong password"
+                                ? "bg-green-500"
+                                : "bg-yellow-500"
+                            }`}
+                          />
+                          <p
+                            className={`mt-1 ${
+                              isBreached
+                                ? "text-red-600"
+                                : passwordStrength === "Strong password"
+                                ? "text-green-600"
+                                : "text-yellow-600"
+                            }`}
+                          >
+                            {isBreached
+                              ? "This password has appeared in data breaches."
+                              : passwordStrength}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="repeat-password">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="repeat-password"
+                          type={showRepeatPassword ? "text" : "password"}
+                          placeholder="Confirm password"
+                          required
+                          value={repeatPassword}
+                          onChange={(e) => setRepeatPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRepeatPassword(!showRepeatPassword)}
+                          className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                          {showRepeatPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-2">
+                        {error}
+                      </p>
+                    )}
+
+                    <DialogFooter className="flex justify-between">
+                      <DialogClose asChild>
+                        <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Creating account..." : "Register"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
         </div>
       </div>
       <TabsContent
@@ -695,7 +1051,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.lastname} {item.firstname}</DrawerTitle>
           <DrawerDescription>
-            Showing total visitors for the last 6 months
+            Showing Account Info
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
@@ -744,13 +1100,11 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 leading-none font-medium">
-                  Trending up by 5.2% this month{" "}
+                  GoogleMeet Attendance{" "}
                   <IconTrendingUp className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Showing total visitors for the last 6 months. This is just
-                  some random text to test the layout. It spans multiple lines
-                  and should wrap around.
+                  Student log and activeness on online class meetings.
                 </div>
               </div>
               <Separator />

@@ -1,5 +1,6 @@
 "use client";
 import { AppSidebar } from "@/components/app-sidebar"
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 
 interface User {
@@ -24,9 +25,15 @@ export function ProtectedLayoutContent({ children, user }: ProtectedLayoutProps)
       </div>
 
       <SidebarInset className={`flex flex-col flex-1 transition-all duration-300 ${!isMobile && open ? "ml-2" : !isMobile ? "ml-2" : "ml-0"}`}>
-        <div className="p-4 border-b flex items-center justify-center font-bold">
-          User Management
+        <div className="p-4 border-b flex items-center justify-between">
+          <h1 className="text-3xl font-extrabold tracking-tight text-balance text-center flex-1">
+            User Management
+          </h1>
+          <div className="ml-4 flex-shrink-0">
+            <ThemeSwitcher />
+          </div>
         </div>
+
         <main className="flex-1 w-full max-w-full mx-auto p-4 sm:p-6 md:p-10 transition-all duration-300">
           {children}
         </main>

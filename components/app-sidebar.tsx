@@ -13,10 +13,6 @@ import {
   IconDatabase,
   IconReport,
   IconFileWord,
-  IconInnerShadowTop,
-  IconBrandMeetup,
-  IconBrandGmail,
-  IconBrandGoogle,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -34,8 +30,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import Logo from "@/assets/dark-logo.png"
+import darkLogo from "@/assets/dark-logo.png"
+import lightLogo from "@/assets/white-logo.png"
 import Image from "next/image"
+import { useTheme } from "next-themes"
 
 
 interface User {
@@ -70,6 +68,9 @@ const navData = {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const { open, toggleSidebar } = useSidebar()
+  const { theme } = useTheme()
+
+  const logoSrc = theme === "light" ? lightLogo : darkLogo;
 
   return (
     <Sidebar
@@ -88,7 +89,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                 open ? "justify-between px-2" : "justify-center"
               }`}
             >
-              {open && <Image src={Logo} alt="Logo" height={70} width={70} />}
+              {open && <Image src={logoSrc} alt="Logo" height={70} width={70} />}
 
               {/* Sidebar toggle button */}
               <SidebarTrigger className={`${open ? "" : "absolute"} text-5xl`} onClick={toggleSidebar} size="lg" />

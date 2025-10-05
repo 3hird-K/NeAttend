@@ -1,10 +1,8 @@
 "use client"
 
 import {
-  IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
   IconUserCircle,
 } from "@tabler/icons-react"
 
@@ -30,24 +28,36 @@ import {
 } from "@/components/ui/sidebar"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { Database } from "@/database.types"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
-  const router = useRouter();
-  const { open, isMobile } = useSidebar() 
-  
+type User = Database["public"]["Tables"]["users"]["Row"]
+
+interface NavUserProps {
+  user: User
+}
+
+export function NavUser({ user }: NavUserProps) {
+  const router = useRouter()
+  const { open, isMobile } = useSidebar()
+
   const logout = async () => {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push("/auth/login");
-    };
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/auth/login")
+  }
+
+  // Fallback avatar (default image if not in DB)
+  const avatarUrl = (user as any).avatar || "/avatars/default.png"
+
+  // Map roles to display names
+  const roleDisplayMap: Record<string, string> = {
+    admin: "Administrator",
+    instructor: "Instructor",
+    student: "Student",
+    adins: "Admin/Instructor",
+  }
+
+  const displayRole = user.role ? roleDisplayMap[user.role] || user.role : "N/A"
 
   return (
     <SidebarMenu>
@@ -59,15 +69,20 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-sm text-sm">CN</AvatarFallback>
+                <AvatarImage src={avatarUrl} alt={user.firstname || "User"} />
+                <AvatarFallback className="rounded-sm text-sm">
+                  {user.firstname?.charAt(0) || "U"}
+                  {user.lastname?.charAt(0) || ""}
+                </AvatarFallback>
               </Avatar>
 
               {open && (
                 <div className="grid flex-1 text-left text-sm leading-tight ml-2">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">
+                    {user.firstname} {user.lastname}
+                  </span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
+                    {displayRole}
                   </span>
                 </div>
               )}
@@ -85,11 +100,16 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage src={avatarUrl} alt={user.firstname || "User"} />
+                  <AvatarFallback className="rounded-lg">
+                    {user.firstname?.charAt(0) || "U"}
+                    {user.lastname?.charAt(0) || ""}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">
+                    {user.firstname} {user.lastname}
+                  </span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
@@ -104,14 +124,6 @@ export function NavUser({
                 <IconUserCircle />
                 Account
               </DropdownMenuItem>
-              {/* <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem> */}
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />

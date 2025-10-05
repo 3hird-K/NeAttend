@@ -2,13 +2,10 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+import { Database } from "@/database.types";
 
-interface User {
-  name: string
-  email: string
-  avatar: string
-  role?: string
-}
+type User = Database["public"]["Tables"]["users"]["Row"]
+
 
 interface ProtectedLayoutProps {
   children: React.ReactNode

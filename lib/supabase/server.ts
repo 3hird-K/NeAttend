@@ -1,10 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
- * Especially important if using Fluid compute: Don't put this client in a
- * global variable. Always create a new client within each function when using
- * it.
+ * Session-aware client
+ * Safe to use in server components, API routes, etc.
  */
 export async function createClient() {
   const cookieStore = await cookies();
@@ -23,12 +23,22 @@ export async function createClient() {
               cookieStore.set(name, value, options),
             );
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Ignored: Happens in server components
           }
         },
       },
     },
+  );
+}
+
+/**
+ * Admin client (⚠️ service role)
+ * Use only in server code (API routes / server actions).
+ * Never expose to the client.
+ */
+export function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY! // only available on server
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import ProtectedLayout from "./protectedLayout"
+import { QueryProvider } from "@/provider/query-provider"
 
 export default async function ProtectedServerLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -11,27 +12,26 @@ export default async function ProtectedServerLayout({ children }: { children: Re
   const claims = claimsData.claims
   const authUserId = claims.sub 
 
-  // console.log("UserId", authUserId)
-
   const { data: userFromDB, error: userError } = await supabase
     .from("users")
-    .select("id, firstname, lastname, email, role")
+    .select("id, firstname, lastname, email, role, created_at")
     .eq("id", authUserId)
-    .single() 
-  
-  // console.log(userFromDB?.id)
+    .single()
 
-  // console.log("Data:", JSON.stringify(userFromDB, null, 2))
-  // console.log("Error:", userError)
-  if (userError || !userFromDB) redirect("/auth/login") 
-
+  if (userError || !userFromDB) redirect("/auth/login")
 
   const user = {
-    name: `${userFromDB.firstname ?? ""} ${userFromDB.lastname ?? ""}`.trim() || userFromDB.email,
+    id: userFromDB.id,
+    firstname: userFromDB.firstname,
+    lastname: userFromDB.lastname,
     email: userFromDB.email,
-    avatar: "/avatars/default.png",
-    role: userFromDB.role ?? "N/A",
+    role: userFromDB.role ?? "student",
+    created_at: userFromDB.created_at ?? null,
   }
 
-  return <ProtectedLayout user={user}>{children}</ProtectedLayout>
+  return (
+    <QueryProvider>
+      <ProtectedLayout user={user}>{children}</ProtectedLayout>
+    </QueryProvider>
+  )
 }

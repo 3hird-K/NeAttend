@@ -34,13 +34,9 @@ import darkLogo from "@/assets/dark-logo.png"
 import lightLogo from "@/assets/white-logo.png"
 import Image from "next/image"
 import { useTheme } from "next-themes"
+import { Database } from "@/database.types"
 
-
-interface User {
-  name: string
-  email: string
-  avatar: string
-}
+type User = Database["public"]["Tables"]["users"]["Row"]
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User

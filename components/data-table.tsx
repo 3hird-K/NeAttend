@@ -122,6 +122,11 @@ import { isPasswordPwned, isPasswordStrong } from "@/lib/passwordUtils"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import { Database } from "@/database.types"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { deleteUser, updateUser } from "@/lib/supabase/users"
+import { deleteAuthUser } from "@/lib/supabase/server-api"
+import { Alert, AlertTitle } from "./ui/alert"
 
 export const schema = z.object({
   id: z.string(),
@@ -131,6 +136,10 @@ export const schema = z.object({
   email: z.string(),
   created_at: z.string().nullable(),
 })
+
+
+export type User = z.infer<typeof schema>
+
 
 function DragHandle({ id }: { id: string }) {
   const { attributes, listeners } = useSortable({
@@ -151,7 +160,7 @@ function DragHandle({ id }: { id: string }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
+const columns: ColumnDef<User>[] = [
   {
     id: "drag",
     header: () => null,
@@ -234,46 +243,56 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     })
   },
 },
+
 {
   id: "actions",
-  cell: ({ row }) => {
-    const [open, setOpen] = React.useState(false)
+  cell: ({ row }: { row: any }) => {
+    const [openEdit, setOpenEdit] = React.useState(false)
+    const [openDelete, setOpenDelete] = React.useState(false)
     const [firstname, setFirstname] = React.useState(row.original.firstname || "")
     const [lastname, setLastname] = React.useState(row.original.lastname || "")
     const [role, setRole] = React.useState(row.original.role || "")
     const [error, setError] = React.useState<string | null>(null)
-    const [isLoading, setIsLoading] = React.useState(false)
-    const router = useRouter() 
 
-    const handleUpdate = async (e: React.FormEvent) => {
+    const queryClient = useQueryClient()
+
+    // ✅ Update mutation
+    const updateMutation = useMutation({
+      mutationFn: async () => {
+        return updateUser(row.original.id, { firstname, lastname, role })
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["users"] })
+        setOpenEdit(false)
+      },
+      onError: (err: any) => {
+        setError(err.message || "Failed to update user")
+      },
+      
+    })
+
+    const handleUpdate = (e: React.FormEvent) => {
       e.preventDefault()
-      setIsLoading(true)
       setError(null)
-
-      try {
-        const supabase = createClient()
-
-        // ✅ Update users table directly
-        const { error: updateError } = await supabase
-          .from("users")
-          .update({
-            firstname,
-            lastname,
-            role,
-          })
-          .eq("id", row.original.id) // filter by row ID
-
-        if (updateError) throw updateError
-
-        // Success ✅
-        router.refresh()
-        setOpen(false)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to update user")
-      } finally {
-        setIsLoading(false)
-      }
+      updateMutation.mutate()
     }
+
+    // ✅ Delete mutation (users table + auth.users)
+    const deleteMutation = useMutation({
+      mutationFn: async () => {
+        await deleteUser(row.original.id)
+        await deleteAuthUser(row.original.id)
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["users"] })
+        setOpenDelete(false)
+      },
+      onError: (err: any) => {
+        console.error("Delete error:", err)
+        setError(err.message || "Failed to delete user")
+      },
+    })
+
 
     return (
       <>
@@ -293,7 +312,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             <DropdownMenuItem
               onSelect={(event) => {
                 event.preventDefault()
-                setOpen(true)
+                setOpenEdit(true)
               }}
             >
               <span>Edit</span>
@@ -304,8 +323,9 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             <DropdownMenuItem
               variant="destructive"
               className="text-red-600"
-              onSelect={() => {
-                console.log("Delete row with ID:", row.original.id)
+              onSelect={(event) => {
+                event.preventDefault()
+                setOpenDelete(true)
               }}
             >
               Delete
@@ -313,8 +333,8 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Edit Dialog */}
-        <Dialog open={open} onOpenChange={setOpen}>
+        {/* ✅ Edit Dialog */}
+        <Dialog open={openEdit} onOpenChange={setOpenEdit}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Edit profile</DialogTitle>
@@ -356,7 +376,9 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="instructor">Instructor</SelectItem>
                       <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="adins">Administrator/Instructor</SelectItem>
+                      <SelectItem value="adins">
+                        Administrator/Instructor
+                      </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -372,11 +394,40 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Updating..." : "Save changes"}
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Updating..." : "Save changes"}
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* ✅ Delete Confirmation Dialog */}
+        <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Delete User</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete{" "}
+                <span className="font-medium">
+                  {firstname} {lastname}
+                </span>
+                ? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="flex justify-between">
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </>
@@ -386,9 +437,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
 
 
 
+
+
 ]
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
+function DraggableRow({ row }: { row: Row<User> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   })
@@ -422,12 +475,68 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   )
 }
 
+// export function DataTable({
+//   data,
+// }: {
+//   data: User[]
+// }) {
+//   // const [data, setData] = React.useState(() => initialData)
+//   const [rowSelection, setRowSelection] = React.useState({})
+//   const [columnVisibility, setColumnVisibility] =
+//     React.useState<VisibilityState>({})
+//   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+//     []
+//   )
+//   const [sorting, setSorting] = React.useState<SortingState>([])
+//   const [pagination, setPagination] = React.useState({
+//     pageIndex: 0,
+//     pageSize: 10,
+//   })
+//   const sortableId = React.useId()
+//   const sensors = useSensors(
+//     useSensor(MouseSensor, {}),
+//     useSensor(TouchSensor, {}),
+//     useSensor(KeyboardSensor, {})
+//   )
+
+//   const dataIds = React.useMemo<UniqueIdentifier[]>(
+//     () => data?.map(({ id }) => id) || [],
+//     [data]
+//   )
+
+//   const [roleFilter, setRoleFilter] = React.useState<string>("all")
+
+//   const table = useReactTable({
+//   data,
+//   columns,
+//   state: {
+//     sorting,
+//     columnVisibility,
+//     rowSelection,
+//     columnFilters,
+//     pagination,
+//   },
+//   getRowId: (row) => row.id.toString(),
+//   enableRowSelection: true,
+//   onRowSelectionChange: setRowSelection,
+//   onSortingChange: setSorting,
+//   onColumnFiltersChange: setColumnFilters,
+//   onColumnVisibilityChange: setColumnVisibility,
+//   onPaginationChange: setPagination,
+//   getCoreRowModel: getCoreRowModel(),
+//   getFilteredRowModel: getFilteredRowModel(),
+//   getPaginationRowModel: getPaginationRowModel(),
+//   getSortedRowModel: getSortedRowModel(),
+//   getFacetedRowModel: getFacetedRowModel(),
+//   getFacetedUniqueValues: getFacetedUniqueValues(),
+// })
+
 export function DataTable({
-  data: initialData,
+  data,
 }: {
-  data: z.infer<typeof schema>[]
+  data: User[]
 }) {
-  const [data, setData] = React.useState(() => initialData)
+
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -454,29 +563,31 @@ export function DataTable({
   const [roleFilter, setRoleFilter] = React.useState<string>("all")
 
   const table = useReactTable({
-  data,
-  columns,
-  state: {
-    sorting,
-    columnVisibility,
-    rowSelection,
-    columnFilters,
-    pagination,
-  },
-  getRowId: (row) => row.id.toString(),
-  enableRowSelection: true,
-  onRowSelectionChange: setRowSelection,
-  onSortingChange: setSorting,
-  onColumnFiltersChange: setColumnFilters,
-  onColumnVisibilityChange: setColumnVisibility,
-  onPaginationChange: setPagination,
-  getCoreRowModel: getCoreRowModel(),
-  getFilteredRowModel: getFilteredRowModel(),
-  getPaginationRowModel: getPaginationRowModel(),
-  getSortedRowModel: getSortedRowModel(),
-  getFacetedRowModel: getFacetedRowModel(),
-  getFacetedUniqueValues: getFacetedUniqueValues(),
-})
+    data, // ✅ use directly
+    columns,
+    state: {
+      sorting,
+      columnVisibility,
+      rowSelection,
+      columnFilters,
+      pagination,
+    },
+    getRowId: (row) => row.id.toString(),
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+  })
+
+
 
     React.useEffect(() => {
       if (roleFilter === "all") {
@@ -492,16 +603,23 @@ export function DataTable({
     }, [roleFilter])
 
 
+  // function handleDragEnd(event: DragEndEvent) {
+  //   const { active, over } = event
+  //   if (active && over && active.id !== over.id) {
+  //     setData((data) => {
+  //       const oldIndex = dataIds.indexOf(active.id)
+  //       const newIndex = dataIds.indexOf(over.id)
+  //       return arrayMove(data, oldIndex, newIndex)
+  //     })
+  //   }
+  // }
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id)
-        const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex)
-      })
-    }
-  }
+  const { active, over } = event
+  if (!over || active.id === over.id) return
+
+  // if later you want reorder, introduce local state for `data`
+}
+
 
   const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
@@ -1037,7 +1155,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({ item }: { item: User}) {
   const isMobile = useIsMobile()
 
   return (

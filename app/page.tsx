@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import Logo from "@/assets/Logologin.png"
 import LogoLight from "@/assets/loginlogolight.png"
-import { ViewsList } from "@/components/views-list"
+import { UsersList } from "@/components/users-sample"
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
         <nav className="sticky top-0 z-50 w-full flex justify-center border-b border-b-foreground/10 bg-background/80 backdrop-blur">
           <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
             <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>
+              <Link href={"/protected"}>
                 <div className="flex justify-center">
                   <Image
                     src={LogoLight}
@@ -42,7 +42,7 @@ export default function Home() {
         {/* Page Content */}
         <div className="flex-1 flex flex-col gap-10 max-w-5xl p-5">
           <Hero />
-          <ViewsList />
+          <UsersList />
         </div>
 
         {/* Footer */}

@@ -1,11 +1,11 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { DataTable } from "@/components/data-table"
 import { getAllUsers } from "@/lib/supabase/users"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { AlertCircleIcon } from "lucide-react"
+import { DataTable } from "./data-table"
 
 export default function UsersTableClient() {
   const { data: users = [], isRefetching, isLoading, error } = useQuery({

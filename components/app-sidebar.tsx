@@ -34,7 +34,7 @@ import darkLogo from "@/assets/dark-logo.png"
 import lightLogo from "@/assets/white-logo.png"
 import Image from "next/image"
 import { useTheme } from "next-themes"
-import { Database } from "@/databasess.types"
+import { Database } from "@/database.types"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -45,7 +45,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 const navData = {
   navMain: [
     { title: "Dashboard", url: "#", icon: IconDashboard },
-    // { title: "Lifecycle", url: "#", icon: IconListDetails },
     { title: "Analytics", url: "#", icon: IconChartBar },
     { title: "Projects", url: "#", icon: IconFolder },
     { title: "Team", url: "#", icon: IconUsers },

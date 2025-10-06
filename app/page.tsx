@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import Logo from "@/assets/Logologin.png"
 import LogoLight from "@/assets/loginlogolight.png"
-import { UsersList } from "@/components/users-sample"
+import { UsersList } from "@/components/course-info"
 import { DepartmentList } from "@/components/departments-sample"
 import { CoursesList } from "@/components/courses-sample"
 import { UserDepartmentsList } from "@/components/users-dep-sample"
@@ -48,7 +48,9 @@ export default function Home() {
           <UserDepartmentsList />
           <CoursesList />
           <DepartmentList />
-          <UsersList />
+          {/* <UsersList /> */}
+          <UsersList course_id="0813ff7d-4d80-4cca-b642-091cab844d06" />
+
         </div>
 
         {/* Footer */}

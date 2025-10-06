@@ -128,11 +128,12 @@
             import { deleteAuthUser } from "@/lib/supabase/server-api"
             import { Alert, AlertTitle } from "./ui/alert"
             import { getAllCourse } from "@/lib/supabase/course"
+import { CourseInfo } from "./course-info"
 
             export const schema = z.object({
               id: z.string(),
-              firstname: z.string().nullable(),
-              lastname: z.string().nullable(),
+              firstname: z.string(),
+              lastname: z.string(),
               role: z.string().nullable(),
               email: z.string().nullable(),
               created_at: z.string().nullable(),
@@ -181,7 +182,21 @@
                 accessorKey: "course_id",
                 header: "Course",
                 enableHiding: true,
+                cell: ({ row }) => {
+                  const courseId = row.original.course_id
+
+                  const { data: courses = [], isLoading } = useQuery({
+                    queryKey: ["courses"],
+                    queryFn: getAllCourse,
+                  })
+
+                  if (isLoading) return <span>Loading...</span>
+
+                  const course = courses.find((c) => c.id === courseId)
+                  return course ? course.name : "Not Enrolled"
+                },
               },
+
               {
                 accessorKey: "role",
                 header: "Type",
@@ -483,62 +498,6 @@
               )
             }
 
-            // export function DataTable({
-            //   data,
-            // }: {
-            //   data: User[]
-            // }) {
-            //   // const [data, setData] = React.useState(() => initialData)
-            //   const [rowSelection, setRowSelection] = React.useState({})
-            //   const [columnVisibility, setColumnVisibility] =
-            //     React.useState<VisibilityState>({})
-            //   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-            //     []
-            //   )
-            //   const [sorting, setSorting] = React.useState<SortingState>([])
-            //   const [pagination, setPagination] = React.useState({
-            //     pageIndex: 0,
-            //     pageSize: 10,
-            //   })
-            //   const sortableId = React.useId()
-            //   const sensors = useSensors(
-            //     useSensor(MouseSensor, {}),
-            //     useSensor(TouchSensor, {}),
-            //     useSensor(KeyboardSensor, {})
-            //   )
-
-            //   const dataIds = React.useMemo<UniqueIdentifier[]>(
-            //     () => data?.map(({ id }) => id) || [],
-            //     [data]
-            //   )
-
-            //   const [roleFilter, setRoleFilter] = React.useState<string>("all")
-
-            //   const table = useReactTable({
-            //   data,
-            //   columns,
-            //   state: {
-            //     sorting,
-            //     columnVisibility,
-            //     rowSelection,
-            //     columnFilters,
-            //     pagination,
-            //   },
-            //   getRowId: (row) => row.id.toString(),
-            //   enableRowSelection: true,
-            //   onRowSelectionChange: setRowSelection,
-            //   onSortingChange: setSorting,
-            //   onColumnFiltersChange: setColumnFilters,
-            //   onColumnVisibilityChange: setColumnVisibility,
-            //   onPaginationChange: setPagination,
-            //   getCoreRowModel: getCoreRowModel(),
-            //   getFilteredRowModel: getFilteredRowModel(),
-            //   getPaginationRowModel: getPaginationRowModel(),
-            //   getSortedRowModel: getSortedRowModel(),
-            //   getFacetedRowModel: getFacetedRowModel(),
-            //   getFacetedUniqueValues: getFacetedUniqueValues(),
-            // })
-
             export function DataTable({
               data,
             }: {
@@ -610,22 +569,9 @@
                   }
                 }, [roleFilter])
 
-
-              // function handleDragEnd(event: DragEndEvent) {
-              //   const { active, over } = event
-              //   if (active && over && active.id !== over.id) {
-              //     setData((data) => {
-              //       const oldIndex = dataIds.indexOf(active.id)
-              //       const newIndex = dataIds.indexOf(over.id)
-              //       return arrayMove(data, oldIndex, newIndex)
-              //     })
-              //   }
-              // }
               function handleDragEnd(event: DragEndEvent) {
               const { active, over } = event
               if (!over || active.id === over.id) return
-
-              // if later you want reorder, introduce local state for `data`
             }
 
 
@@ -1000,14 +946,6 @@
                               <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                   return (
-                                    // <TableHead key={header.id} colSpan={header.colSpan}>
-                                    //   {header.isPlaceholder
-                                    //     ? null
-                                    //     : flexRender(
-                                    //         header.column.columnDef.header,
-                                    //         header.getContext()
-                                    //       )}
-                                    // </TableHead>
                                     <TableHead
                                       key={header.id}
                                       colSpan={header.colSpan}
@@ -1163,113 +1101,105 @@
               },
             } satisfies ChartConfig
 
-            function TableCellViewer({ item }: { item: User}) {
-              const isMobile = useIsMobile()
 
-              return (
-                <Drawer direction={isMobile ? "bottom" : "right"}>
-                  <DrawerTrigger asChild>
-                    <Button variant="link" className="text-foreground w-fit px-0 text-left">
-                      {item.id}
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent>
-                    <DrawerHeader className="gap-1">
-                      <DrawerTitle>{item.lastname} {item.firstname}</DrawerTitle>
-                      <DrawerDescription>
-                        Showing Account Info
-                      </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-                      {!isMobile && (
-                        <>
-                          <ChartContainer config={chartConfig}>
-                            <AreaChart
-                              accessibilityLayer
-                              data={chartData}
-                              margin={{
-                                left: 0,
-                                right: 10,
-                              }}
-                            >
-                              <CartesianGrid vertical={false} />
-                              <XAxis
-                                dataKey="month"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={8}
-                                tickFormatter={(value) => value.slice(0, 3)}
-                                hide
-                              />
-                              <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent indicator="dot" />}
-                              />
-                              <Area
-                                dataKey="mobile"
-                                type="natural"
-                                fill="var(--color-mobile)"
-                                fillOpacity={0.6}
-                                stroke="var(--color-mobile)"
-                                stackId="a"
-                              />
-                              <Area
-                                dataKey="desktop"
-                                type="natural"
-                                fill="var(--color-desktop)"
-                                fillOpacity={0.4}
-                                stroke="var(--color-desktop)"
-                                stackId="a"
-                              />
-                            </AreaChart>
-                          </ChartContainer>
-                          <Separator />
-                          <div className="grid gap-2">
-                            <div className="flex gap-2 leading-none font-medium">
-                              GoogleMeet Attendance{" "}
-                              <IconTrendingUp className="size-4" />
-                            </div>
-                            <div className="text-muted-foreground">
-                              Student log and activeness on online class meetings.
-                            </div>
-                          </div>
-                          <Separator />
-                        </>
-                      )}
-                      <form className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-3">
-                          <Label htmlFor="header">FirstName</Label>
-                          <Input id="header"/>
-                          {/* <Input id="header" defaultValue={item.firstname} /> */}
-                        </div>
-                        <div className="flex flex-col gap-3">
-                          <Label htmlFor="header">LastName</Label>
-                          <Input id="header" />
-                          {/* <Input id="header" defaultValue={item.lastname} /> */}
-                        </div>
-                        <div className="flex flex-col gap-3">
-                          <Label htmlFor="role">Account Type</Label>
-                          <Select>
-                          {/* <Select defaultValue={item.role}> */}
-                            <SelectTrigger id="role" className="w-full">
-                              <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="instructor">Instructor</SelectItem>
-                              <SelectItem value="student">student</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </form>
-                    </div>
-                    <DrawerFooter>
-                      <Button>Submit</Button>
-                      <DrawerClose asChild>
-                        <Button variant="outline">Done</Button>
-                      </DrawerClose>
-                    </DrawerFooter>
-                  </DrawerContent>
-                </Drawer>
-              )
-            }
+            function TableCellViewer({ item }: { item: User }) {
+  const isMobile = useIsMobile()
+  function toCapitalize(str?: string) {
+  if (!str) return ""
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+  return (
+    <Drawer direction={isMobile ? "bottom" : "right"}>
+      <DrawerTrigger asChild>
+        <Button
+          variant="link"
+          className="text-foreground w-fit px-0 text-left"
+        >
+          {item.id}
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent>
+        <DrawerHeader className="gap-1">
+          <DrawerTitle>
+            {toCapitalize(item.lastname)} {toCapitalize(item.firstname)}
+          </DrawerTitle>
+
+          <DrawerDescription>Showing Account Info</DrawerDescription>
+        </DrawerHeader>
+
+        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+          {!isMobile && (
+            <>
+              <ChartContainer config={chartConfig}>
+                <AreaChart
+                  accessibilityLayer
+                  data={chartData}
+                  margin={{ left: 0, right: 10 }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                    hide
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Area
+                    dataKey="mobile"
+                    type="natural"
+                    fill="var(--color-mobile)"
+                    fillOpacity={0.6}
+                    stroke="var(--color-mobile)"
+                    stackId="a"
+                  />
+                  <Area
+                    dataKey="desktop"
+                    type="natural"
+                    fill="var(--color-desktop)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-desktop)"
+                    stackId="a"
+                  />
+                </AreaChart>
+              </ChartContainer>
+              <Separator />
+              <div className="grid gap-2">
+                <div className="flex gap-2 leading-none font-medium">
+                  GoogleMeet Attendance <IconTrendingUp className="size-4" />
+                </div>
+                <div className="text-muted-foreground">
+                  Student log and activeness on online class meetings.
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Account Info Display */}
+          <div className="grid gap-5">
+            <div>
+              <Label className="mb-1 text-muted-foreground">Account Type</Label>
+              <p className="font-medium capitalize">{item.role}</p>
+            </div>
+            <div>
+              <CourseInfo course_id={item.course_id}/>
+            </div>
+          </div>
+        </div>
+
+        <DrawerFooter>
+          <DrawerClose asChild>
+            <Button variant="outline">Back</Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  )
+}
+

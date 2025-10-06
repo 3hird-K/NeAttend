@@ -14,50 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      courses: {
+        Row: {
+          created_at: string | null
+          department_id: string
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id: string
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_departments: {
+        Row: {
+          department_id: string
+          user_id: string
+        }
+        Insert: {
+          department_id: string
+          user_id: string
+        }
+        Update: {
+          department_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_departments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
+          avatar_url: string | null
+          course_id: string | null
           created_at: string | null
           email: string
           firstname: string
           id: string
           lastname: string
           role: string
+          updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          course_id?: string | null
           created_at?: string | null
           email: string
           firstname: string
-          id: string
+          id?: string
           lastname: string
           role: string
+          updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          course_id?: string | null
           created_at?: string | null
           email?: string
           firstname?: string
           id?: string
           lastname?: string
           role?: string
+          updated_at?: string | null
         }
-        Relationships: []
-      }
-      views: {
-        Row: {
-          created_at: string
-          id: number
-          name: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

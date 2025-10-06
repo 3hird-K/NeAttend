@@ -1,12 +1,12 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { getAllUsers } from "@/lib/supabase/users"
+import { getAllUserDepartments } from "@/lib/supabase/user_departments"
 
-export function UsersList() {
+export function UserDepartmentsList() {
   const { data: views, isLoading, error } = useQuery({
-    queryKey: ["users"],
-    queryFn: getAllUsers,
+    queryKey: ["user_departments"],
+    queryFn: getAllUserDepartments,
   })
 
   if (isLoading) return <p>Loading...</p>

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/sidebar"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { Database } from "@/database.types"
+import { Database } from "@/databasess.types"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 

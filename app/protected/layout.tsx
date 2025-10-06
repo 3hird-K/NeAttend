@@ -12,21 +12,25 @@ export default async function ProtectedServerLayout({ children }: { children: Re
   const claims = claimsData.claims
   const authUserId = claims.sub 
 
-  const { data: userFromDB, error: userError } = await supabase
+  const { data: userData, error: userError } = await supabase
     .from("users")
-    .select("id, firstname, lastname, email, role, created_at")
+    .select("*")
     .eq("id", authUserId)
     .single()
 
-  if (userError || !userFromDB) redirect("/auth/login")
+  if (userError || !userData) redirect("/auth/login")
 
   const user = {
-    id: userFromDB.id,
-    firstname: userFromDB.firstname,
-    lastname: userFromDB.lastname,
-    email: userFromDB.email,
-    role: userFromDB.role ?? "student",
-    created_at: userFromDB.created_at ?? null,
+    id: userData.id,
+    firstname: userData.firstname ?? null,
+    lastname: userData.lastname ?? null,
+    email: userData.email,
+    role: userData.role ?? null,
+    department_id: userData.department_id ?? null,
+    course_id: userData.course_id ?? null,
+    avatar_url: userData.avatar_url ?? null,
+    created_at: userData.created_at ?? null,
+    updated_at: userData.updated_at ?? null
   }
 
   return (

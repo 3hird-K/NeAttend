@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { isPasswordPwned, isPasswordStrong } from "@/lib/passwordUtils";
+import { getAllCourse } from "@/lib/supabase/course";
+import { useQuery } from "@tanstack/react-query";
 
 export function SignUpForm({
   className,
@@ -49,17 +51,32 @@ export function SignUpForm({
   const [showRepeatPassword, setShowRepeatPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<string | null>(null);
   const [isBreached, setIsBreached] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState("");
 
   const router = useRouter();
+
+
+  const { data: courses = [], isLoading: coursesLoading } = useQuery({
+    queryKey: ["courses"],
+    queryFn: getAllCourse,
+  })
+
+  console.log(selectedCourse)
+  console.log(role)
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
-
+    
     if (!role) {
       setError("Please select a role before signing up.");
+      setIsLoading(false);
+      return;
+    }
+    if (!selectedCourse) {
+      setError("Please select a course before signing up.");
       setIsLoading(false);
       return;
     }
@@ -125,8 +142,11 @@ export function SignUpForm({
             lastname,
             role,
             email,
+            course_id: selectedCourse, 
           },
         ]);
+
+        
 
         if (insertError) {
           console.error("Insert into users table failed:", insertError);
@@ -159,28 +179,28 @@ export function SignUpForm({
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
-      <CardHeader className="flex flex-col items-center space-y-2 text-center">
+    <Card className="w-full max-w-7xl shadow-lg">
+      <CardHeader className="flex flex-col items-center text-center mt-0 pt-0">
         <Link href={"/"}>
           <div className="flex justify-center">
             <Image
               src={LogoLight}
               alt="Logo Light"
-              width={200}
-              height={200}
+              width={180}
+              height={180}
               className="block dark:hidden"
             />
             <Image
               src={Logo}
               alt="Logo Dark"
-              width={200}
-              height={200}
+              width={180}
+              height={180}
               className="hidden dark:block"
             />
           </div>
         </Link>
 
-        <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+        <CardTitle className="text-2xl font-bold pt-0 mt-0">Create Account</CardTitle>
         <CardDescription>Fill in your details to get started</CardDescription>
       </CardHeader>
 
@@ -221,15 +241,40 @@ export function SignUpForm({
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Account type</SelectLabel>
-                  <SelectItem value="instructor">Instructor</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="admin" disabled>
+                  <SelectItem value="Instructor">Instructor</SelectItem>
+                  <SelectItem value="Student">Student</SelectItem>
+                  <SelectItem value="Admin" disabled>
                     Admin
                   </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="course">Course</Label>
+            <Select
+              value={selectedCourse}
+              onValueChange={(value) => setSelectedCourse(value)}
+              required
+              disabled={coursesLoading}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={coursesLoading ? "Loading..." : "Select Course"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Course</SelectLabel>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>        
+
 
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>

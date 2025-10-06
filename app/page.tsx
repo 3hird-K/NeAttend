@@ -7,6 +7,9 @@ import Image from "next/image"
 import Logo from "@/assets/Logologin.png"
 import LogoLight from "@/assets/loginlogolight.png"
 import { UsersList } from "@/components/users-sample"
+import { DepartmentList } from "@/components/departments-sample"
+import { CoursesList } from "@/components/courses-sample"
+import { UserDepartmentsList } from "@/components/users-dep-sample"
 
 export default function Home() {
   return (
@@ -42,6 +45,9 @@ export default function Home() {
         {/* Page Content */}
         <div className="flex-1 flex flex-col gap-10 max-w-5xl p-5">
           <Hero />
+          <UserDepartmentsList />
+          <CoursesList />
+          <DepartmentList />
           <UsersList />
         </div>
 

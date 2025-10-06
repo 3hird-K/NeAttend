@@ -34,7 +34,7 @@ import darkLogo from "@/assets/dark-logo.png"
 import lightLogo from "@/assets/white-logo.png"
 import Image from "next/image"
 import { useTheme } from "next-themes"
-import { Database } from "@/database.types"
+import { Database } from "@/databasess.types"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 

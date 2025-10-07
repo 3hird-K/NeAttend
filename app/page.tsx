@@ -56,7 +56,7 @@ export default function Home() {
           <p>
             Developed by{" "}
             <a
-              href="https://www.ustp.edu.ph/"
+              href="https://wwwx.ustp.edu.ph/"
               target="_blank"
               className="font-bold hover:underline"
               rel="noreferrer"

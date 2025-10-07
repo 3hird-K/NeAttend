@@ -100,7 +100,7 @@ export function LoginForm({
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
+    <Card className="w-full h-full bg-[#201B51] rounded-none border-none text-white">
       <CardHeader className="flex flex-col items-center space-y-2 text-center">
         <Link href={"/"}>
           <div className="flex justify-center">
@@ -138,6 +138,7 @@ export function LoginForm({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="border-none"
             />
           </div>
 
@@ -159,6 +160,7 @@ export function LoginForm({
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="border-none"
             />
             <button
               type="button"
@@ -199,7 +201,7 @@ export function LoginForm({
         <Button
           type="button"
           variant="outline"
-          className="w-full flex items-center gap-2 py-5"
+          className="w-full flex items-center gap-2 py-5 bg-transparent]"
           onClick={handleGoogleLogin}
         >
           <Image src={GoogleLogo} alt="Google" width={20} height={20} />

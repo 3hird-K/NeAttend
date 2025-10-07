@@ -39,6 +39,7 @@ import { useTheme } from "next-themes"
 import { Database } from "@/database.types"
 import { useRouter, usePathname } from "next/navigation"
 import { Button } from "./ui/button"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -51,27 +52,51 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const { theme } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
+  const {isAdmin} = useCurrentUser();
 
   const logoSrc = theme === "light" ? lightLogo : darkLogo
 
-  const navData = {
-    navMain: [
-      { title: "Dashboard", url: "/protected", icon: IconDashboard },
-      { title: "Activities", url: "/protected/announcements", icon: IconActivity },
-      { title: "Rules", url: "/protected/rules", icon: IconNotes },
-      { title: "Team", url: "/protected", icon: IconUsers }, // your DataTable
-    ],
-    navSecondary: [
-      { title: "Theme", url: "/protected", icon: IconSettings },
-      { title: "Get Help", url: "/protected", icon: IconHelp },
-      { title: "Search", url: "/protected", icon: IconSearch },
-    ],
-    documents: [
-      { name: "Data Library", url: "/protected", icon: IconDatabase },
-      { name: "Reports", url: "/protected", icon: IconReport },
-      { name: "Word Assistant", url: "/protected", icon: IconFileWord },
-    ],
+  // const navData = {
+  //   navMain: [
+  //     { title: "Dashboard", url: "/protected", icon: IconDashboard },
+  //     { title: "Activities", url: "/protected/announcements", icon: IconActivity },
+  //     { title: "Rules", url: "/protected/rules", icon: IconNotes },
+  //     { title: "Team", url: "/protected/team", icon: IconUsers }, 
+  //   ],
+  //   navSecondary: [
+  //     { title: "Theme", url: "/protected", icon: IconSettings },
+  //     { title: "Get Help", url: "/protected", icon: IconHelp },
+  //     { title: "Search", url: "/protected", icon: IconSearch },
+  //   ],
+  //   documents: [
+  //     { name: "Data Library", url: "/protected", icon: IconDatabase },
+  //     { name: "Reports", url: "/protected", icon: IconReport },
+  //     { name: "Word Assistant", url: "/protected", icon: IconFileWord },
+  //   ],
+  // }
+
+
+  const navMain = [
+    { title: "Dashboard", url: "/protected", icon: IconDashboard },
+    { title: "Activities", url: "/protected/announcements", icon: IconActivity },
+    { title: "Rules", url: "/protected/rules", icon: IconNotes },
+  ]
+  if (isAdmin) {
+    navMain.push({ title: "Team", url: "/protected/team", icon: IconUsers })
   }
+
+  const navSecondary = [
+    { title: "Theme", url: "/protected", icon: IconSettings },
+    { title: "Get Help", url: "/protected", icon: IconHelp },
+    { title: "Search", url: "/protected", icon: IconSearch },
+  ]
+
+  const documents = [
+    { name: "Data Library", url: "/protected", icon: IconDatabase },
+    { name: "Reports", url: "/protected", icon: IconReport },
+    { name: "Word Assistant", url: "/protected", icon: IconFileWord },
+  ]
+
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
@@ -103,20 +128,20 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       {/* Sidebar Content */}
       <SidebarContent>
         <NavMain
-          items={navData.navMain}
+          items={navMain}
           showText={open}
           onItemClick={(url) => router.push(url)}
           activePath={pathname}
           user={user}
         />
         <NavDocuments
-          items={navData.documents}
+          items={documents}
           showText={open}
           onItemClick={(url) => router.push(url)}
           activePath={pathname}
         />
         <NavSecondary
-          items={navData.navSecondary}
+          items={navSecondary}
           showText={open}
           onItemClick={(url) => router.push(url)}
           activePath={pathname}

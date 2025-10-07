@@ -12,6 +12,7 @@ import {
 import { CreateRuleDialog } from "./create-rule-dialog"
 import { Database } from "@/database.types"
 import { CreateAnnouncement } from "./create-announcement-dialog"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -32,13 +33,17 @@ export function NavMain({
   activePath?: string
   user: User
 }) {
+
+  const {isStudent} = useCurrentUser();
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         {/* Top Actions */}
+        {!isStudent && 
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <CreateRuleDialog user={user}> 
+            <CreateAnnouncement user={user}> 
               <SidebarMenuButton
                 tooltip="Create Rule"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
@@ -46,7 +51,7 @@ export function NavMain({
                 <IconCirclePlus />
                 {showText && <span>Create Rule</span>}
               </SidebarMenuButton>
-            </CreateRuleDialog>
+            </CreateAnnouncement>
             <CreateAnnouncement user={user}>
               <Button
                 size="icon"
@@ -60,6 +65,8 @@ export function NavMain({
           </SidebarMenuItem>
         </SidebarMenu>
 
+        }
+
         {/* Nav Items */}
         <SidebarMenu>
           {items.map((item) => {
@@ -69,7 +76,6 @@ export function NavMain({
                 <SidebarMenuButton
                   tooltip={item.title}
                   onClick={() => (onItemClick ? onItemClick(item.url) : null)}
-                  // isActive={isActive}
                   className={isActive ? "bg-accent text-accent-foreground" : ""}
                 >
                   <item.icon className="mr-2 h-5 w-5" />

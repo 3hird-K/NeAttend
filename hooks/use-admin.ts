@@ -26,6 +26,7 @@ export async function getAdminUser() {
 
   const claims = sessionData.session.user
   const isAdmin = user.role === "Admin" || user.role === "Admin/Instructor"
-
-  return { user, claims, isAdmin }
+  const isInstructor = user.role === "Instructor"
+  const isStudent = user.role === "Student"
+  return { user, claims, isAdmin, isInstructor, isStudent }
 }

@@ -48,6 +48,8 @@ export function useCurrentUser() {
   }, [])
 
   const isAdmin = user?.role === "Admin" || user?.role === "Admin/Instructor"
+  const isInstructor = user?.role === "Instructor"
+  const isStudent = user?.role === "Student"
 
-  return { user, isAdmin, loading, error }
+  return { user, isAdmin, isInstructor, isStudent, loading, error }
 }

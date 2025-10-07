@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AllAnnouncementsTab({
   announcements = [],
@@ -32,6 +33,7 @@ export default function AllAnnouncementsTab({
   readMutation,
   editingAnnouncement,
   setEditingAnnouncement,
+  isLoading
 }: any) {
   const [editName, setEditName] = useState("")
   const [editDescription, setEditDescription] = useState("")
@@ -67,8 +69,58 @@ export default function AllAnnouncementsTab({
     }
   }
 
+  const TruncatedText = ({ text, maxLength = 500 }: { text: string | null; maxLength?: number }) => {
+    const [expanded, setExpanded] = useState(false)
+    if (!text) return null
+    if (text?.length <= maxLength) return <span>{text}</span>
+    return (
+      <span>
+        {expanded ? text : text?.slice(0, maxLength) + "..."}{" "}
+        <Button
+          variant={"link"}
+          size={"sm"}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "See less" : "See more"}
+        </Button>
+      </span>
+    )
+  }
+
+  const renderSkeletonCard = () => (
+    <Card className="px-4 animate-pulse">
+      <CardHeader className="flex items-center space-x-3">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-3 w-1/4" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Skeleton className="h-5 w-1/2" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-5/6" />
+      </CardContent>
+      <CardFooter className="flex space-x-2">
+        <Skeleton className="h-6 w-16 rounded" />
+        <Skeleton className="h-6 w-16 rounded" />
+      </CardFooter>
+    </Card>
+  )
+
+    if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i}>{renderSkeletonCard()}</div>
+        ))}
+      </div>
+    )
+  }
+
+
   if (!announcements || announcements.length === 0)
-    return <p className="text-gray-500">No announcements here.</p>
+    return <p className="text-gray-500 text-center">No announcements here.</p>
 
   return (
     <>
@@ -103,7 +155,8 @@ export default function AllAnnouncementsTab({
 
             <CardContent>
               <CardTitle className="mb-2">{a.name}</CardTitle>
-              <CardDescription>{a.description}</CardDescription>
+              <TruncatedText text={a.description} />
+              {/* <CardDescription>{a.description}</CardDescription> */}
             </CardContent>
 
             <CardFooter className="flex justify-start space-x-4 text-gray-600">

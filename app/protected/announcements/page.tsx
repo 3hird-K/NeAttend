@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
@@ -8,6 +7,7 @@ import {
   getMyAnnouncements,
   UnreadAnnouncements,
   getUnreadAnnouncements,
+  // getReadAnnouncements, // ✅ import the new read function
 } from "@/lib/supabase/posts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -18,20 +18,6 @@ import AllAnnouncementsTab from "./Announce"
 import MyAnnouncementsTab from "./Tab"
 import ReadAnnouncementsTab from "./Read"
 import { useToggleReadMutation } from "@/hooks/toggle-read"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  isWithinInterval,
-  startOfToday,
-  startOfWeek,
-  startOfMonth,
-} from "date-fns"
 import type { Database } from "@/database.types"
 
 export type AnnouncementReads =
@@ -49,17 +35,13 @@ export type AnnouncementWithRead = Announcements & {
 }
 
 export default function AnnouncementPage() {
-  const { user } = useCurrentUser()
+  const { user, isStudent } = useCurrentUser()
   const queryClient = useQueryClient()
-  const [filter, setFilter] = useState("all");
   const [editingAnnouncement, setEditingAnnouncement] = useState<{
     id: string
     name: string
     description: string
   } | null>(null)
-
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterValue, setFilterValue] = useState("")
 
   const user_id = user?.id
 
@@ -92,7 +74,7 @@ export default function AnnouncementPage() {
     error: readAnnounceError,
   } = useQuery<(Announcements & { read: AnnouncementReads[]; user?: User })[]>({
     queryKey: ["announcements", "read", user_id],
-    queryFn: () => getUnreadAnnouncements({ user_id }),
+    queryFn: () => getUnreadAnnouncements({ user_id }), // ✅ now calls correct function
     enabled: !!user_id,
   })
 
@@ -127,8 +109,7 @@ export default function AnnouncementPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAnnouncementById(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["announcements"] })
-      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["announcements", user_id] })
       toast.success("Announcement deleted successfully", {
         description: "Announcement has been deleted.",
         position: "top-center",
@@ -149,35 +130,6 @@ export default function AnnouncementPage() {
   if (error || myannounceerror || readAnnounceError)
     return <p>Error: {(error as Error).message}</p>
 
-  // 🔍 Filter logic
-  const filteredAnnouncements = (announcements || []).filter((a) => {
-    const matchesSearch =
-      a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.description?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    let matchesDate = true
-    const createdAt = new Date(a.created_at)
-
-    if (filterValue === "today") {
-      matchesDate = isWithinInterval(createdAt, {
-        start: startOfToday(),
-        end: new Date(),
-      })
-    } else if (filterValue === "this-week") {
-      matchesDate = isWithinInterval(createdAt, {
-        start: startOfWeek(new Date(), { weekStartsOn: 1 }),
-        end: new Date(),
-      })
-    } else if (filterValue === "this-month") {
-      matchesDate = isWithinInterval(createdAt, {
-        start: startOfMonth(new Date()),
-        end: new Date(),
-      })
-    }
-
-    return matchesSearch && matchesDate
-  })
-
   return (
     <div className="p-6 space-y-8 max-w-4xl mx-auto">
       <div className="p-4 border-b flex items-center justify-between mb-5">
@@ -189,85 +141,65 @@ export default function AnnouncementPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-4">
-        {/* ✅ Tabs header with search/filter bar */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <TabsList>
-            <TabsTrigger value="all">All Posts</TabsTrigger>
-            <TabsTrigger value="mine">My Posts</TabsTrigger>
-            <TabsTrigger value="read">Read</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="all" className="space-y-6 w-full">
+  {/* Center the tab buttons */}
+  <div className="flex justify-center">
+    <TabsList className="flex space-x-4 bg-transparent">
+      <TabsTrigger value="all">All Posts</TabsTrigger>
+       {!isStudent && (
+        <TabsTrigger value="mine">My Posts</TabsTrigger>
+      )}
+      <TabsTrigger value="read">Read Post</TabsTrigger>
+    </TabsList>
+  </div>
 
-          <div className="flex items-center space-x-2">
-            <Input
-              placeholder="Search announcements..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              // className="w-[220px]"
-            />
-            {/* <Select value={filterValue} onValueChange={setFilterValue}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="this-week">This Week</SelectItem>
-                <SelectItem value="this-month">This Month</SelectItem>
-              </SelectContent>
-            </Select> */}
-            <Select onValueChange={setFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="mine">My Posts</SelectItem>
-                <SelectItem value="read">Read</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+  {/* 🔹 All Announcements (Unread) */}
+  <TabsContent value="all">
+    <AllAnnouncementsTab
+      announcements={announcements || []}
+      isLoading={isLoading}
+      user={user}
+      deleteMutation={deleteMutation}
+      editMutation={editMutation}
+      readMutation={readMutation}
+      editingAnnouncement={editingAnnouncement}
+      setEditingAnnouncement={setEditingAnnouncement}
+    />
+  </TabsContent>
 
-        {/* 🔹 All Announcements (Unread) */}
-        <TabsContent value="all">
-          <AllAnnouncementsTab
-            announcements={filteredAnnouncements}
-            user={user}
-            deleteMutation={deleteMutation}
-            editMutation={editMutation}
-            readMutation={readMutation}
-            editingAnnouncement={editingAnnouncement}
-            setEditingAnnouncement={setEditingAnnouncement}
-          />
-        </TabsContent>
+  {/* 🔹 My Announcements */}
 
-        {/* 🔹 My Announcements */}
-        <TabsContent value="mine">
-          <MyAnnouncementsTab
-            announcements={myAnnouncements || []}
-            user={user}
-            deleteMutation={deleteMutation}
-            editMutation={editMutation}
-            readMutation={readMutation}
-            editingAnnouncement={editingAnnouncement}
-            setEditingAnnouncement={setEditingAnnouncement}
-          />
-        </TabsContent>
 
-        {/* 🔹 Read Announcements */}
-        <TabsContent value="read">
-          <ReadAnnouncementsTab
-            announcement={readAnnouncements}
-            user={user}
-            deleteMutation={deleteMutation}
-            editMutation={editMutation}
-            readMutation={readMutation}
-            editingAnnouncement={editingAnnouncement}
-            setEditingAnnouncement={setEditingAnnouncement}
-          />
-        </TabsContent>
-      </Tabs>
+  {!isStudent && 
+
+  <TabsContent value="mine">
+    <MyAnnouncementsTab
+      announcements={myAnnouncements || []}
+      user={user}
+      deleteMutation={deleteMutation}
+      editMutation={editMutation}
+      readMutation={readMutation}
+      editingAnnouncement={editingAnnouncement}
+      setEditingAnnouncement={setEditingAnnouncement}
+    />
+  </TabsContent>
+  }
+
+
+  {/* 🔹 Read Announcements */}
+  <TabsContent value="read">
+    <ReadAnnouncementsTab
+      announcement={readAnnouncements}
+      user={user}
+      deleteMutation={deleteMutation}
+      editMutation={editMutation}
+      readMutation={readMutation}
+      editingAnnouncement={editingAnnouncement}
+      setEditingAnnouncement={setEditingAnnouncement}
+    />
+  </TabsContent>
+</Tabs>
+
     </div>
   )
 }

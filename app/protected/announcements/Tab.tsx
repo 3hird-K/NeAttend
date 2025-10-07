@@ -8,3 +8,5 @@ export default function MyAnnouncementsTab(props: any) {
   const myAnnouncements = announcements.filter((a: any) => a.user_id === user?.id)
   return <AllAnnouncementsTab {...props} announcements={myAnnouncements} />
 }
+
+

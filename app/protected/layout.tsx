@@ -30,6 +30,8 @@ export default async function ProtectedServerLayout({ children }: { children: Re
     course_id: userData.course_id ?? null,
     avatar_url: userData.avatar_url ?? null,
     created_at: userData.created_at ?? null,
+    rules_id: userData.rules_id ?? null,
+    announcement_id: userData.announcement_id ?? null,
     updated_at: userData.updated_at ?? null
   }
 

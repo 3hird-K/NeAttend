@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { type Icon } from "@tabler/icons-react"
 
 import {
@@ -13,15 +14,15 @@ import {
 
 export function NavSecondary({
   items,
-  showText = true, 
+  showText = true,
+  onItemClick,
+  activePath,
   ...props
 }: {
-  items: {
-    title: string
-    url: string
-    icon: Icon
-  }[]
+  items: { title: string; url: string; icon: Icon }[]
   showText?: boolean
+  onItemClick?: (url: string) => void
+  activePath?: string
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
     <SidebarGroup {...props}>
@@ -29,11 +30,14 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
-                <a href={item.url} className="flex items-center gap-2">
-                  <item.icon />
-                  {showText && <span>{item.title}</span>}
-                </a>
+              <SidebarMenuButton
+                onClick={() => onItemClick?.(item.url)}
+                className={`flex items-center gap-2 ${
+                  activePath === item.url ? "bg-accent text-accent-foreground" : ""
+                }`}
+              >
+                <item.icon />
+                {showText && <span>{item.title}</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -42,3 +46,4 @@ export function NavSecondary({
     </SidebarGroup>
   )
 }
+

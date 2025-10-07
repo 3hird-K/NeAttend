@@ -6,10 +6,11 @@ import Link from "next/link"
 import Image from "next/image"
 import Logo from "@/assets/Logologin.png"
 import LogoLight from "@/assets/loginlogolight.png"
-import { UsersList } from "@/components/course-info"
 import { DepartmentList } from "@/components/departments-sample"
 import { CoursesList } from "@/components/courses-sample"
-import { UserDepartmentsList } from "@/components/users-dep-sample"
+import { ReadAnnouncements } from "@/components/users-dep-sample"
+// import { UnreadItems } from "@/components/users-dep-sample"
+// import { MyAnnouncements } from "@/components/users-dep-sample"
 
 export default function Home() {
   return (
@@ -45,11 +46,9 @@ export default function Home() {
         {/* Page Content */}
         <div className="flex-1 flex flex-col gap-10 max-w-5xl p-5">
           <Hero />
-          <UserDepartmentsList />
-          <CoursesList />
-          <DepartmentList />
-          {/* <UsersList /> */}
-          <UsersList course_id="0813ff7d-4d80-4cca-b642-091cab844d06" />
+          {/* <MyAnnouncements /> */}
+          {/* <UnreadItems /> */}
+          <ReadAnnouncements />
 
         </div>
 

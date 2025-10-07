@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { AlertCircleIcon } from "lucide-react"
 import { DataTable } from "./data-table"
+import { ThemeSwitcher } from "./theme-switcher"
 
 export default function UsersTableClient() {
   const { data: users = [], isRefetching, isLoading, error } = useQuery({
@@ -54,6 +55,14 @@ export default function UsersTableClient() {
            Refreshing users...
         </div>
       )}
+      <div className="p-4 border-b flex items-center justify-between mb-5">
+          <h1 className="text-3xl font-extrabold tracking-tight text-balance text-center flex-1">
+            User Management
+          </h1>
+          <div className="mb-2 flex-shrink-0">
+            <ThemeSwitcher />
+          </div>
+        </div>
       <DataTable data={users} />
     </div>
   )

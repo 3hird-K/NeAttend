@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_reads: {
+        Row: {
+          announcement_id: string | null
+          created_at: string
+          id: string
+          read: boolean
+          user_id: string | null
+        }
+        Insert: {
+          announcement_id?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          announcement_id?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string | null
@@ -66,6 +140,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_departments: {
         Row: {

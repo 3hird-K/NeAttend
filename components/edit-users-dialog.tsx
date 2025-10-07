@@ -4,13 +4,36 @@ import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { updateUser, deleteUser, getAllCourse } from "@/lib/supabase/users"
 import { deleteAuthUser } from "@/lib/supabase/server-api"
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select"
 import { Button } from "./ui/button"
+import { toast } from "sonner"
+import { Database } from "@/database.types"
 
-export function EditUserDialog({ user }: { user: any }) {
+
+type User = Database["public"]["Tables"]["users"]["Row"]
+
+
+export function EditUserDialog({ user }: { user: User }) {
+  const queryClient = useQueryClient()
   const [openEdit, setOpenEdit] = React.useState(false)
   const [openDelete, setOpenDelete] = React.useState(false)
   const [firstname, setFirstname] = React.useState(user.firstname || "")
@@ -19,24 +42,59 @@ export function EditUserDialog({ user }: { user: any }) {
   const [selectedCourse, setSelectedCourse] = React.useState(user.course_id || "")
   const [error, setError] = React.useState<string | null>(null)
 
-  const queryClient = useQueryClient()
+  // ✅ Fetch courses
+  const { data: courses = [], isLoading: coursesLoading } = useQuery({
+    queryKey: ["courses"],
+    queryFn: getAllCourse,
+  })
 
   // ✅ Update mutation
   const updateMutation = useMutation({
-    mutationFn: async () => {
-      return updateUser(user.id, {
-        firstname,
-        lastname,
-        role,
-        course_id: selectedCourse,
-      })
-    },
+    mutationFn: async () => updateUser(user.id, {
+      firstname,
+      lastname,
+      role,
+      course_id: selectedCourse,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["users", user.id] })
       setOpenEdit(false)
+      toast.success("User updated successfully", {
+        description: `${firstname} ${lastname} has been updated.`,
+        position: "top-center"
+      })
     },
     onError: (err: any) => {
       setError(err.message || "Failed to update user")
+      toast.error("Failed to update user", {
+        description: err.message || "Something went wrong.",
+        position: "top-center",
+      })
+    },
+  })
+
+  // ✅ Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await deleteUser(user.id)
+      await deleteAuthUser(user.id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["courses"] })
+      setOpenDelete(false)
+      toast.success("User deleted successfully", {
+        description: `${firstname} ${lastname} has been removed.`,
+        position: "top-center"
+      })
+    },
+    onError: (err: any) => {
+      setError(err.message || "Failed to delete user")
+      toast.error("Failed to delete user", {
+        description: err.message || "Something went wrong.",
+        position: "top-center"
+      })
     },
   })
 
@@ -46,28 +104,6 @@ export function EditUserDialog({ user }: { user: any }) {
     updateMutation.mutate()
   }
 
-  // ✅ Delete mutation (users table + auth.users)
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      await deleteUser(user.id)
-      await deleteAuthUser(user.id)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-      setOpenDelete(false)
-    },
-    onError: (err: any) => {
-      console.error("Delete error:", err)
-      setError(err.message || "Failed to delete user")
-    },
-  })
-
-  // ✅ Fetch courses
-  const { data: courses = [], isLoading: coursesLoading } = useQuery({
-    queryKey: ["courses"],
-    queryFn: getAllCourse,
-  })
-
   return (
     <>
       {/* Edit Dialog */}
@@ -75,9 +111,7 @@ export function EditUserDialog({ user }: { user: any }) {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription>
-              Update the account details below.
-            </DialogDescription>
+            <DialogDescription>Update the account details below.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleUpdate} className="grid gap-4">
@@ -91,7 +125,6 @@ export function EditUserDialog({ user }: { user: any }) {
                   required
                 />
               </div>
-
               <div className="grid gap-3">
                 <Label htmlFor="lastname">Lastname</Label>
                 <Input
@@ -115,9 +148,7 @@ export function EditUserDialog({ user }: { user: any }) {
                     <SelectItem value="Student">Student</SelectItem>
                     <SelectItem value="Instructor">Instructor</SelectItem>
                     <SelectItem value="Admin">Administrator</SelectItem>
-                    <SelectItem value="Admin/Instructor">
-                      Administrator/Instructor
-                    </SelectItem>
+                    <SelectItem value="Admin/Instructor">Admin/Instructor</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -171,14 +202,9 @@ export function EditUserDialog({ user }: { user: any }) {
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-medium">
-                {firstname} {lastname}
-              </span>
-              ? This action cannot be undone.
+              Are you sure you want to delete <span className="font-medium">{firstname} {lastname}</span>? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-
           <DialogFooter className="flex justify-between">
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>

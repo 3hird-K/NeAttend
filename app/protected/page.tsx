@@ -1,35 +1,27 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+// pages/protected.tsx (server component)
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { InfoIcon, User, Mail, Shield } from "lucide-react"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import UsersTableClient from "@/components/users-table-client"
 import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps"
-import UsersTableClient from "@/components/users-table-client" 
+import { getAdminUser } from "@/hooks/use-admin"
 
 export default async function ProtectedPage() {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.getClaims()
-  if (error || !data?.claims) {
-    redirect("/auth/login")
-  }
-
-  const claims = data.claims
+  const { user, claims, isAdmin } = await getAdminUser()
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
-      <UsersTableClient />
 
-      {/* Info Banner */}
-      <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
-        <InfoIcon size="16" strokeWidth={2} />
-        This is a protected page that you can only see as an Admin user
-      </div>
+      {isAdmin && (
+        <>
+          <UsersTableClient />
+          <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
+            <InfoIcon size={16} strokeWidth={2} />
+            This is a protected page that you can only see as an Admin user
+          </div>
+        </>
+      )}
 
+      {/* Non-admin view */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -54,7 +46,6 @@ export default async function ProtectedPage() {
         </CardContent>
       </Card>
 
-      {/* Next Steps */}
       <Card>
         <CardHeader>
           <CardTitle>Next Steps</CardTitle>
@@ -63,6 +54,7 @@ export default async function ProtectedPage() {
           <FetchDataSteps />
         </CardContent>
       </Card>
+
     </div>
   )
 }

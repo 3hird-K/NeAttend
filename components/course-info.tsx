@@ -7,14 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 
-type CourseId = Database["public"]["Tables"]["users"]["Row"]["course_id"]
+type User = Database["public"]["Tables"]["users"]["Row"]
 
-export function CourseInfo({ course_id }: { course_id: CourseId }) {
-  const { data: course, isLoading, error } = useQuery({
+export function CourseInfo({ user }: { user: User }) {
+  const course_id = user.course_id
+
+  const { data: courses, isLoading, error } = useQuery({
     queryKey: ["userCourse", course_id],
     queryFn: () => getUserCourse(course_id),
-    enabled: !!course_id,
+    enabled: !!course_id, // only run if course_id exists
   })
+
+  // const course = courses?.[0] // get the first (and only) course
 
   if (isLoading) {
     return (
@@ -46,7 +50,7 @@ export function CourseInfo({ course_id }: { course_id: CourseId }) {
     )
   }
 
-  if (!course || course.length === 0) {
+  if (!courses) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
@@ -59,8 +63,6 @@ export function CourseInfo({ course_id }: { course_id: CourseId }) {
     )
   }
 
-  const c = course[0] 
-
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -69,11 +71,11 @@ export function CourseInfo({ course_id }: { course_id: CourseId }) {
       <CardContent className="space-y-2 mt-[-1rem]">
         <div>
           <Label className="text-muted-foreground mb-1">Course Name</Label>
-          <p className="font-medium">{c.name}</p>
+          <p className="font-medium">{courses.name}</p>
         </div>
         <div>
           <Label className="text-muted-foreground mb-1">Course ID</Label>
-          <p className="font-medium">{c.id}</p>
+          <p className="font-medium">{courses.id}</p>
         </div>
       </CardContent>
     </Card>

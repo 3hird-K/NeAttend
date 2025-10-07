@@ -84,23 +84,22 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, Dr
 import { ChartViewer } from "./chart-viewer"
 import { ChartConfig } from "./ui/chart"
 import { CourseInfo } from "./course-info"
-
-// import { DraggableRow } from "./DraggableRow"
-// import { AdminRegisterDialog } from "./AdminRegisterDialog"
-// import { columns } from "./columns" // ✅ import your column definitions
-// import type { User } from "./types" // ✅ your user type
+import { Database } from "@/database.types"
 
 export const schema = z.object({
     id: z.string(),
     firstname: z.string(),
     lastname: z.string(),
-    role: z.string().nullable(),
-    email: z.string().nullable(),
+    role: z.string(),
+    email: z.string(),
     created_at: z.string().nullable(),
     course_id: z.string().nullable(),
-    avatar_url: z.string().nullable()
-})
+    avatar_url: z.string().nullable(),
+    updated_at: z.string().nullable(),
+  })
 export type User = z.infer<typeof schema>
+
+type Users = Database["public"]["Tables"]["users"]["Row"]
 
 
 const chartData = [
@@ -323,8 +322,8 @@ export function DataTable({ data }: { data: User[] }) {
       </TabsContent>
 
       {/* Other tabs (placeholders for now) */}
-      <TabsContent value="student" className="px-4 lg:px-6">Student view</TabsContent>
-      <TabsContent value="key-personnel" className="px-4 lg:px-6">Admin view</TabsContent>
+      {/* <TabsContent value="student" className="px-4 lg:px-6">Student view</TabsContent>
+      <TabsContent value="key-personnel" className="px-4 lg:px-6">Admin view</TabsContent> */}
     </Tabs>
   )
 }
@@ -423,11 +422,6 @@ function DraggableRow({ row }: { row: Row<User> }) {
         transition: transition,
       }}
     >
-      {/* {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))} */}
       {row.getVisibleCells().map((cell, index) => (
         <TableCell
           key={cell.id}
@@ -442,6 +436,7 @@ function DraggableRow({ row }: { row: Row<User> }) {
 }
 
 
+
 function DragHandle({ id }: { id: string }) {
   const { attributes, listeners } = useSortable({
     id,
@@ -449,8 +444,8 @@ function DragHandle({ id }: { id: string }) {
 
   return (
     <Button
-      {...attributes}
-      {...listeners}
+    {...attributes}
+    {...listeners}
       variant="ghost"
       size="icon"
       className="text-muted-foreground size-7 hover:bg-transparent"
@@ -460,7 +455,6 @@ function DragHandle({ id }: { id: string }) {
     </Button>
   )
 }
-
 
 
 function TableCellViewer({ item }: { item: User }) {
@@ -502,7 +496,7 @@ function TableCellViewer({ item }: { item: User }) {
               <p className="font-medium capitalize">{item.role}</p>
             </div>
             <div>
-              <CourseInfo course_id={item.course_id} />
+                  <CourseInfo user={item}/>
             </div>
           </div>
         </div>

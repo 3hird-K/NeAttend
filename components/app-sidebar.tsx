@@ -3,7 +3,6 @@
 import * as React from "react"
 import {
   IconDashboard,
-  IconListDetails,
   IconChartBar,
   IconFolder,
   IconUsers,
@@ -13,6 +12,8 @@ import {
   IconDatabase,
   IconReport,
   IconFileWord,
+  IconActivity,
+  IconNotes,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -30,11 +31,14 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
+
 import darkLogo from "@/assets/dark-logo.png"
 import lightLogo from "@/assets/white-logo.png"
 import Image from "next/image"
 import { useTheme } from "next-themes"
 import { Database } from "@/database.types"
+import { useRouter, usePathname } from "next/navigation"
+import { Button } from "./ui/button"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -42,67 +46,85 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User
 }
 
-const navData = {
-  navMain: [
-    { title: "Dashboard", url: "#", icon: IconDashboard },
-    { title: "Analytics", url: "#", icon: IconChartBar },
-    { title: "Projects", url: "#", icon: IconFolder },
-    { title: "Team", url: "#", icon: IconUsers },
-  ],
-  navSecondary: [
-    { title: "Theme", url: "#", icon: IconSettings },
-    { title: "Get Help", url: "#", icon: IconHelp },
-    { title: "Search", url: "#", icon: IconSearch },
-  ],
-  documents: [
-    { name: "Data Library", url: "#", icon: IconDatabase },
-    { name: "Reports", url: "#", icon: IconReport },
-    { name: "Word Assistant", url: "#", icon: IconFileWord },
-  ],
-}
-
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const { open, toggleSidebar } = useSidebar()
   const { theme } = useTheme()
+  const router = useRouter()
+  const pathname = usePathname()
 
-  const logoSrc = theme === "light" ? lightLogo : darkLogo;
+  const logoSrc = theme === "light" ? lightLogo : darkLogo
+
+  const navData = {
+    navMain: [
+      { title: "Dashboard", url: "/protected", icon: IconDashboard },
+      { title: "Activities", url: "/protected/announcements", icon: IconActivity },
+      { title: "Rules", url: "/protected/rules", icon: IconNotes },
+      { title: "Team", url: "/protected", icon: IconUsers }, // your DataTable
+    ],
+    navSecondary: [
+      { title: "Theme", url: "/protected", icon: IconSettings },
+      { title: "Get Help", url: "/protected", icon: IconHelp },
+      { title: "Search", url: "/protected", icon: IconSearch },
+    ],
+    documents: [
+      { name: "Data Library", url: "/protected", icon: IconDatabase },
+      { name: "Reports", url: "/protected", icon: IconReport },
+      { name: "Word Assistant", url: "/protected", icon: IconFileWord },
+    ],
+  }
 
   return (
-    <Sidebar
-      collapsible="icon"
-      variant="inset"
-      {...props}
-      className={`sticky top-0 h-screen border-r bg-background transition-all duration-300 ${props.className ?? ""}`}
-    >
-    <SidebarHeader>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5 relative">
-            <a
-              href="#"
-              className={`relative flex items-center ${
-                open ? "justify-between px-2" : "justify-center"
-              }`}
-            >
-              {open && <Image src={logoSrc} alt="Logo" height={70} width={70} />}
+    <Sidebar collapsible="icon" variant="inset" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <div className="flex items-center justify-start w-full">
+                {open ? (
+                  <>
+                    <Image src={logoSrc} alt="Logo" height={70} width={70} />
+                    <SidebarTrigger
+                      onClick={toggleSidebar}
+                      className="text-5xl ml-auto mr-[-0.5rem]"
+                    />
+                  </>
+                ) : (
+                  <SidebarTrigger
+                    onClick={toggleSidebar}
+                    className="text-5xl ml-[-0.5rem]"
+                  />
+                )}
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-              {/* Sidebar toggle button */}
-              <SidebarTrigger className={`${open ? "" : "absolute"} text-5xl`} onClick={toggleSidebar} size="lg" />
-            </a>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    </SidebarHeader>
-
-
-
-
+      {/* Sidebar Content */}
       <SidebarContent>
-        <NavMain items={navData.navMain} showText={open} />
-        <NavDocuments items={navData.documents} showText={open} />
-        <NavSecondary items={navData.navSecondary} showText={open} className="mt-auto" />
+        <NavMain
+          items={navData.navMain}
+          showText={open}
+          onItemClick={(url) => router.push(url)}
+          activePath={pathname}
+          user={user}
+        />
+        <NavDocuments
+          items={navData.documents}
+          showText={open}
+          onItemClick={(url) => router.push(url)}
+          activePath={pathname}
+        />
+        <NavSecondary
+          items={navData.navSecondary}
+          showText={open}
+          onItemClick={(url) => router.push(url)}
+          activePath={pathname}
+          className="mt-auto"
+        />
       </SidebarContent>
 
+      {/* Footer with user info */}
       <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>

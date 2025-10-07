@@ -66,3 +66,4 @@ export function ChartViewer({ data, config, title, description }: ChartViewerPro
     </>
   )
 }
+
